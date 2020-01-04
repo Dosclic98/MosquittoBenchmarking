@@ -1,7 +1,6 @@
 package dos;
 
 import java.util.ArrayList;
-import java.util.Date;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -11,17 +10,20 @@ import org.eclipse.paho.client.mqttv3.MqttTopic;
 
 public class Publisher extends Thread {
 
-	private static int NUM_THREADS = 700;
+	public static int NUM_THREADS = 1000;
+	public static int DELAY_PUBLISH = 100;	
+	public static int NUM_PUBLISH = 100;
+	
+	public static int qos = 0;
 
-	private static int DELAY_PUBLISH = 1000;
-
+	// private static String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
 	private static String BROKER_URL = "tcp://localhost:1883";
 
 	private int myId = 0;
 
 	private String clientId;
 
-	private static String TOPIC = "dos/dosMult";
+	private static String TOPIC = "dos/Bench";
 
 	private MqttClient mqttClient;
 
@@ -42,7 +44,7 @@ public class Publisher extends Thread {
 		try {
 			synchronized(this.lock) {
 				myId = i;
-				clientId = i + Long.toString(new Date().getTime()) + "pub";
+				clientId = MqttClient.generateClientId() + "-Pub";
 				mqttClient = new MqttClient(BROKER_URL, clientId);
 			}
 		} catch (MqttException e) {
@@ -50,9 +52,6 @@ public class Publisher extends Thread {
 			System.exit(1);
 		}
 	}
-
-	public Publisher(int i) {
-		this(null, null,  i); }
 
 
 	@Override
@@ -62,6 +61,7 @@ public class Publisher extends Thread {
 				MqttConnectOptions option = new MqttConnectOptions();
 				// option.setUserName("sonor");
 				// option.setPassword("sono".toCharArray());
+				
 
 				// Imposta il fatto che i messaggi pubblicati da questo publisher non vadano recuperati da un subscriber
 				// che si connette dopo l'inizio della trasmissione
@@ -75,11 +75,16 @@ public class Publisher extends Thread {
 			}
 			
 			System.out.println("Created pub: " + myId);
-
-			while(true) {
+			
+			int i = 0;
+			while(i < NUM_PUBLISH) {
 					publishTime(myId);
 					Thread.sleep(DELAY_PUBLISH);
+					i++;
 			}
+			publishExit(myId);
+			mqttClient.disconnect();
+			System.out.println(mqttClient.getClientId() + " discnnected");
 		} catch (MqttException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -93,9 +98,24 @@ public class Publisher extends Thread {
 		synchronized(lockCre) {
 			synchronized(lock) {
 				final MqttTopic timeTopic = mqttClient.getTopic(TOPIC);
-				final String message = "DosPub numero: " + num + " " + Long.toString(new Date().getTime());
-				timeTopic.publish(new MqttMessage(message.getBytes()));
-				System.out.println("Published by DosPub numero " + num + " on topic: " + timeTopic.getName() + " Message: " + message);
+				final String message = Long.toString(System.currentTimeMillis());
+				MqttMessage msg = new MqttMessage(message.getBytes());
+				msg.setQos(qos);
+				timeTopic.publish(msg);
+				System.out.println("Published by " + mqttClient.getClientId() + " numero " + num + " on topic: " + timeTopic.getName() + "\n\t Message: " + message);
+			}			
+		}
+	}
+
+	private void publishExit(int num) throws MqttException {
+		synchronized(lockCre) {
+			synchronized(lock) {
+				final MqttTopic timeTopic = mqttClient.getTopic(TOPIC);
+				final String message = "EXIT";
+				MqttMessage msg = new MqttMessage(message.getBytes());
+				msg.setQos(2);
+				timeTopic.publish(msg);
+				System.out.println("Published by " + mqttClient.getClientId() + " numero " + num + " on topic: " + timeTopic.getName() + "\n\t Message: " + message);
 			}			
 		}
 	}

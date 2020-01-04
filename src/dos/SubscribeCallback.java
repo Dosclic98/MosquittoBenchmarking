@@ -7,6 +7,9 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 public class SubscribeCallback implements MqttCallback {
 
 	private Object lock;
+	public static long sumDelay = -1;
+	public static long count = 1;
+	public static long avg = 0;
 
 
 	public SubscribeCallback(Object lock) {
@@ -17,10 +20,6 @@ public class SubscribeCallback implements MqttCallback {
 		}
 	}
 
-	public SubscribeCallback() {
-		this(null); }
-
-
 	@Override
 	public void connectionLost(Throwable arg0) {
 		// TODO Auto-generated method stub
@@ -30,14 +29,36 @@ public class SubscribeCallback implements MqttCallback {
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken arg0) {
 		// TODO Auto-generated method stub
-
+		System.out.println("######################################");
 	}
 
 	@Override
 	public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-		synchronized(lock) {
-			System.out.println("Message arrived from topic: " + topic + " Message content: " + mqttMessage.toString());
-			if(topic.equals("home/LWT")) System.out.println("Sensor gone");
+		long delay = 0;
+		System.out.println("Message arrived from topic: " + topic + " Message content: " + mqttMessage.toString());
+		if(topic.equals("home/LWT")) System.out.println("Sensor gone");
+		else {
+			if(mqttMessage.toString().equals("EXIT")) {
+				synchronized(lock) {
+					if(sumDelay != -1) {
+						System.out.println("AVG Delay: " + sumDelay / count);
+						sumDelay = (long) -1;
+						count = 1;
+						avg = sumDelay / count;
+					}
+				}
+				System.exit(0);
+			} else {
+				delay = System.currentTimeMillis() - Long.parseLong(mqttMessage.toString());
+				synchronized(lock) {
+					if(sumDelay == -1) sumDelay = delay;
+					else {
+						sumDelay += delay;
+						count++;
+					}
+				}
+				System.out.println("Calculated delay: " + delay + " ms");					
+			}
 		}
 	}
 

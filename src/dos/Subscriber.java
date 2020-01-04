@@ -1,22 +1,23 @@
 package dos;
 
 import java.util.ArrayList;
-import java.util.Date;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
-public class Subscriber extends Thread {
-	private static int NUM_THREADS = 300;
+public class Subscriber extends Thread{
+	public static int NUM_THREADS = 1;
+	public static int DELAY_THREADS = 10;
 
 	// Url del brocker
-	public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
+	// public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
+	private static String BROKER_URL = "tcp://localhost:1883";
 
 	// Id del client generato dinamicamente ottenendo il numero di secondi
 	public String clientId = null;
 
 	// Il topic a cui sottoscrivere
-	private static final String TOPIC = "dos/dosMult";
+	private static final String TOPIC = "dos/Bench";
 
 	// client mqtt
 	private MqttClient mqttClient;
@@ -36,8 +37,7 @@ public class Subscriber extends Thread {
 		try {
 			synchronized(this.lock) {
 				counter = i;
-				clientId = Long.toString(new Date().getTime()) + "-sub";
-				// crea un nuovo MqttCLient con l'url del brocker e l'id del client
+				clientId = MqttClient.generateClientId() + "-Sub";
 				mqttClient = new MqttClient(BROKER_URL, clientId);
 			}
 		} catch(MqttException e) {
@@ -46,25 +46,25 @@ public class Subscriber extends Thread {
 		}
 	}
 
-	public Subscriber(int i) {
-		this(null, i); }
 
-
-	@Override
 	public void run() {
 		try {
-			// Imposta le callback
 			mqttClient.setCallback(new SubscribeCallback(lock));
-			// Si connette al broker
 			mqttClient.connect();
+			mqttClient.subscribe(TOPIC, Publisher.qos);
 
-			// Sottoscrive al topic desiderato
-			mqttClient.subscribe(TOPIC);
-
-			System.out.println("Now subscriber " + counter + " listening on topic: " + TOPIC);
+			System.out.println("Subscriber " + mqttClient.getClientId() + " listening on topic: " + TOPIC);
 		} catch (MqttException e) {
 			e.printStackTrace();
 			System.exit(1);
+		} catch (IllegalArgumentException e1) {
+			assert(e1.getMessage().equals("Terminating message arrived"));
+			System.out.println(mqttClient.getClientId() + " terminating");
+			try {
+				mqttClient.disconnect();
+			} catch (MqttException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -72,12 +72,11 @@ public class Subscriber extends Thread {
 		ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
 		for(int i = 1; i <= NUM_THREADS; i++) {
 			listSub.add(new Subscriber(listSub, i));
-			listSub.get(listSub.size()-1).run();
+			listSub.get(listSub.size()-1).start();
+			Thread.sleep(DELAY_THREADS);
 		}
 
 		System.out.println("Fine");
 	}
-
-	// Provare uno con tanti e tanti con tanti
 
 }
