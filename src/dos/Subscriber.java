@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
-public class Subscriber extends Thread{
-	public static int NUM_THREADS = 100;
+public class Subscriber{
+	public static int NUM_THREADS = 1;
 	public static int DELAY_THREADS = 10;
 
 	// Url del brocker
@@ -20,7 +20,7 @@ public class Subscriber extends Thread{
 	private static final String TOPIC = "dos/Bench";
 
 	// client mqtt
-	private MqttClient mqttClient;
+	public MqttClient mqttClient;
 
 	public int counter = 0;
 
@@ -57,25 +57,34 @@ public class Subscriber extends Thread{
 		} catch (MqttException e) {
 			e.printStackTrace();
 			System.exit(1);
-		} catch (IllegalArgumentException e1) {
-			assert(e1.getMessage().equals("Terminating message arrived"));
-			System.out.println(mqttClient.getClientId() + " terminating");
-			try {
-				mqttClient.disconnect();
-			} catch (MqttException e) {
-				e.printStackTrace();
-			}
-		}
+		} 
 	}
 
-	public static void main(String args[]) throws InterruptedException {
+	public static void main(String args[]) throws InterruptedException, MqttException {
 		ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
 		for(int i = 1; i <= NUM_THREADS; i++) {
 			listSub.add(new Subscriber(listSub, i));
-			listSub.get(listSub.size()-1).start();
+			listSub.get(listSub.size()-1).run();
 			Thread.sleep(DELAY_THREADS);
 		}
 
+		synchronized(listSub) {
+			listSub.wait();
+			for(Subscriber sub : listSub) {
+				if(sub.mqttClient.isConnected()) {
+					sub.mqttClient.disconnect();
+				}
+				sub.mqttClient.close();
+			}
+		}
+		System.out.println("NUM PUB: " + Publisher.NUM_THREADS + "\n" +
+						   "NUM SUB: " + Subscriber.NUM_THREADS + "\n" +
+						   "MAX TROUGHPUT: " + 
+						   			((1000 / Publisher.DELAY_PUBLISH) * Publisher.NUM_THREADS) +
+						   			" msg/s" + "\n" +
+						   "AVG DELAY: " + SubscribeCallback.avg);				
+
+		
 		System.out.println("Fine");
 	}
 

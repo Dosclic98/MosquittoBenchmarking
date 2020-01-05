@@ -42,13 +42,12 @@ public class SubscribeCallback implements MqttCallback {
 				synchronized(lock) {
 					if(sumDelay != (long) -2) {
 						System.out.println("AVG Delay: " + sumDelay / count);
+						avg = sumDelay / count;
 						sumDelay = (long) -2;
 						count = 1;
-						avg = sumDelay / count;
-						lock.notify();
+						lock.notifyAll();
 					}
 				}
-				System.exit(0);
 			} else {
 				delay = System.currentTimeMillis() - Long.parseLong(mqttMessage.toString());
 				synchronized(lock) {

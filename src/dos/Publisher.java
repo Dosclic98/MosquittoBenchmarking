@@ -70,11 +70,9 @@ public class Publisher extends Thread {
 				// Imposta il suo comportamento in casi particolari
 				option.setWill(mqttClient.getTopic("retilab/LWT"), "I'm gone".getBytes(), 0 , false);
 
-				mqttClient.connect(option);
 				//Thread.sleep(100);
+				mqttClient.connect(option);
 			}
-			
-			System.out.println("Created pub: " + myId);
 			
 			int i = 0;
 			while(i < NUM_PUBLISH) {
@@ -83,8 +81,11 @@ public class Publisher extends Thread {
 					i++;
 			}
 			publishExit(myId);
-			mqttClient.disconnect();
-			System.out.println(mqttClient.getClientId() + " discnnected");
+			if(mqttClient.isConnected()) {
+				mqttClient.disconnect();				
+			}
+			mqttClient.close();
+			System.out.println(mqttClient.getClientId() + " disconnected");
 		} catch (MqttException e) {
 			e.printStackTrace();
 			System.exit(1);
