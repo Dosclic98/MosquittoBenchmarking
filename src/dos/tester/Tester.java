@@ -25,6 +25,7 @@ public class Tester {
 				listPub.get(listPub.size()-1).start();
 			}
 		}
+		listSub.wait();
 		
 		System.out.println("MEGA AVG: " + SubscribeCallback.avg);
 	}

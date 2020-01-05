@@ -6,7 +6,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Subscriber extends Thread{
-	public static int NUM_THREADS = 1;
+	public static int NUM_THREADS = 100;
 	public static int DELAY_THREADS = 10;
 
 	// Url del brocker

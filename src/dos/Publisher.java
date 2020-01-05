@@ -10,11 +10,11 @@ import org.eclipse.paho.client.mqttv3.MqttTopic;
 
 public class Publisher extends Thread {
 
-	public static int NUM_THREADS = 1000;
+	public static int NUM_THREADS = 500;
 	public static int DELAY_PUBLISH = 100;	
 	public static int NUM_PUBLISH = 100;
 	
-	public static int qos = 0;
+	public static int qos = 1;
 
 	// private static String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
 	private static String BROKER_URL = "tcp://localhost:1883";

@@ -40,18 +40,20 @@ public class SubscribeCallback implements MqttCallback {
 		else {
 			if(mqttMessage.toString().equals("EXIT")) {
 				synchronized(lock) {
-					if(sumDelay != -1) {
+					if(sumDelay != (long) -2) {
 						System.out.println("AVG Delay: " + sumDelay / count);
-						sumDelay = (long) -1;
+						sumDelay = (long) -2;
 						count = 1;
 						avg = sumDelay / count;
+						lock.notify();
 					}
 				}
 				System.exit(0);
 			} else {
 				delay = System.currentTimeMillis() - Long.parseLong(mqttMessage.toString());
 				synchronized(lock) {
-					if(sumDelay == -1) sumDelay = delay;
+					if(sumDelay == (long) -1) sumDelay = delay;
+					else if(sumDelay == (long) -2) {/* nulla */}
 					else {
 						sumDelay += delay;
 						count++;
