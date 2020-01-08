@@ -4,8 +4,6 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Subscriber implements Runnable{
-	// public static int DELAY_THREADS = 10;
-
 	// Url del brocker
 	// public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
 	private static String BROKER_URL = "tcp://localhost:1883";
@@ -16,7 +14,7 @@ public class Subscriber implements Runnable{
 	// Il topic a cui sottoscrivere
 	private static final String TOPIC = "dos/Bench";
 	
-	private static int qos = 0;
+	public static int qos = 0;
 
 	// client mqtt
 	public MqttClient mqttClient;

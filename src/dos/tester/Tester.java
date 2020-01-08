@@ -1,5 +1,6 @@
 package dos.tester;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -9,72 +10,76 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 
 import dos.Publisher;
 import dos.Subscriber;
+import dos.resultWriter.ResultWriter;
 
 public class Tester {
-	public static int numPub = 0;
-	public static int numSub = 0;
-	public static int timeRunning = 30 * 1000;
+	public static int timeRunning = 10 * 1000;
+	public static volatile boolean start = false;
+	public static volatile boolean terminated = false;
 	
-	public static void main(String args[]) throws InterruptedException, MqttException {
-		// Da metere tutto in una funzione (bisogna passare anche il qos)
-		// Valutare se calcolare i messaggi inviati anche usando i 
-		// subscriber (guardare i messaggi che stanno tra il tempo di
-		// inizio della conta e un tempo prestabilito).
+	private static ResultWriter resWr = null;
+	
+	public static void main(String args[]) throws InterruptedException, MqttException, IOException {		
+		resWr = new ResultWriter();
+		
+		for(int i = 0; i <= 0; i++) {
+			benchmark(1,1,i);
+		}
+		
+		resWr.close();
+	}
+	
+	private static void benchmark(int numPub, int numSub, int qos) throws InterruptedException, MqttException, IOException {
+		Subscriber.qos = qos;
+		Publisher.qos = qos;
+		
 		ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
 		ArrayList<Publisher> listPub = new ArrayList<Publisher>();
 		
-		if(checkParams(args)) {
-			Object cre = new Object();
-			ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numPub + numSub);
-			for(int i = 1; i <= numPub; i++) {
-				listPub.add(new Publisher(listPub, cre, i));
-				executor.execute(listPub.get(listPub.size()-1));
-			}
-			for(int i = 1; i <= numSub; i++) {
-				listSub.add(new Subscriber(listSub, i));
-				executor.execute(listSub.get(listSub.size()-1));
-			}
-			System.out.println("Waiting for clients to start...");
-			Thread.sleep(2000);
-			
-			// Counting
-			Publisher.start = true;
-			Thread.sleep(timeRunning);
-			Publisher.start = false;
-			
-			// Terminating pubs and subs
-			Publisher.terminated = true;
-			System.out.println("Waiting for threads to terminate...");
-			for(Subscriber sub : listSub) {
-				sub.terminate();
-			}
-			
-			// Asking for termination of main clients threads and waiting
-			// for it
-			executor.shutdown();
-			executor.awaitTermination(1, TimeUnit.HOURS);
-			int numMsg = 0;
-			for(Publisher pub : listPub) {
-				numMsg += pub.count;
-			}
-			System.out.println("Messages per second managed: " + numMsg / (timeRunning / 1000));
+		
+		Object cre = new Object();
+		ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numPub + numSub);
+		for(int i = 1; i <= numPub; i++) {
+			listPub.add(new Publisher(listPub, cre, i));
+			executor.execute(listPub.get(listPub.size()-1));
 		}
+		for(int i = 1; i <= numSub; i++) {
+			listSub.add(new Subscriber(listSub, i));
+			executor.execute(listSub.get(listSub.size()-1));
+		}
+		System.out.println("Waiting for clients to start...");
+		Thread.sleep(2000);
+		
+		// Counting
+		Tester.start = true;
+		Thread.sleep(timeRunning);
+		Tester.start = false;
+		
+		// Terminating pubs and subs
+		Tester.terminated = true;
+		System.out.println("Waiting for threads to terminate...");
+		for(Subscriber sub : listSub) {
+			sub.terminate();
+		}
+		
+		// Asking for termination of main clients threads and waiting
+		// for it
+		executor.shutdown();
+		executor.awaitTermination(1, TimeUnit.HOURS);
+		int numMsg = 0;
+		for(Publisher pub : listPub) {
+			numMsg += pub.count;
+		}
+		long numMsgSec = numMsg / (timeRunning / 1000);
+		resWr.write(numPub, numSub, qos, numMsgSec);
+		System.out.println("Messages per second managed: " + numMsgSec);
+		
+		reInit();
 	}
 	
-	private static boolean checkParams(String args[]) {
-		if(args.length != 2) {
-			System.out.println("Prendo <numero_pub> <numero_sub>");
-			return false;
-		} else {
-			try {
-				numPub = Integer.parseInt(args[0]);
-				numSub = Integer.parseInt(args[1]);
-			} catch(NumberFormatException e) {
-				System.out.println("Dati inseriti invalidi");
-				return false;
-			}
-			return true;
-		}
+	private static void reInit() {
+		start = false;
+		terminated = false;
 	}
 	
 }

@@ -6,15 +6,11 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 
-public class Publisher implements Runnable {
+import dos.tester.Tester;
 
-	// public static int DELAY_PUBLISH = 100;	
-	// public static int NUM_PUBLISH = 100;
+public class Publisher implements Runnable {
 	
 	public static int qos = 0;
-	
-	public static volatile boolean start = false;
-	public static volatile boolean terminated = false;
 	
 	public int count = 0;
 
@@ -64,7 +60,7 @@ public class Publisher implements Runnable {
 				// Imposta il fatto che i messaggi pubblicati da questo publisher non vadano recuperati da un subscriber
 				// che si connette dopo l'inizio della trasmissione
 				option.setCleanSession(true);
-
+				option.setMaxInflight(1000);
 				// Imposta il suo comportamento in casi particolari
 				option.setWill(mqttClient.getTopic("retilab/LWT"), "I'm gone".getBytes(), 0 , false);
 
@@ -75,12 +71,12 @@ public class Publisher implements Runnable {
 			}
 			
 			boolean conn = mqttClient.isConnected();
-			while(conn && !terminated) {
+			while(conn && !Tester.terminated) {
 				synchronized(lock) {
 					conn = mqttClient.isConnected();
-					if(conn) {
+					if(conn && Tester.start) {
 						publishTime(myId);
-						if(start) count++;				
+						count++;				
 					}
 				}
 			}
@@ -105,7 +101,6 @@ public class Publisher implements Runnable {
 		final String message = Long.toString(System.currentTimeMillis());
 		MqttMessage msg = new MqttMessage(message.getBytes());
 		msg.setQos(qos);
-		timeTopic.publish(msg);
-		// System.out.println("Published by " + mqttClient.getClientId() + " numero " + num + " on topic: " + timeTopic.getName() + "\n\t Message: " + message);						
+		timeTopic.publish(msg);						
 	}
 }
