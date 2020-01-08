@@ -1,13 +1,10 @@
 package dos;
 
-import java.util.ArrayList;
-
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
-public class Subscriber{
-	public static int NUM_THREADS = 1;
-	public static int DELAY_THREADS = 10;
+public class Subscriber implements Runnable{
+	// public static int DELAY_THREADS = 10;
 
 	// Url del brocker
 	// public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
@@ -51,7 +48,7 @@ public class Subscriber{
 
 	public void run() {
 		try {
-			mqttClient.setCallback(new SubscribeCallback(lock));
+			mqttClient.setCallback(new SubscribeCallback());
 			mqttClient.connect();
 			mqttClient.subscribe(TOPIC, Subscriber.qos);
 
@@ -61,53 +58,13 @@ public class Subscriber{
 			System.exit(1);
 		} 
 	}
-
-	public static void main(String args[]) throws InterruptedException, MqttException {
-		String fileName = new java.io.File(Publisher.class.getProtectionDomain()
-				  .getCodeSource()
-				  .getLocation()
-				  .getPath())
-				.getName();
-
-		if(args.length != 2) {
-			System.out.println("Prendo --> java -jar " + fileName + " <num_sub> <qos>");
-		} else {
-			try {
-				int numSub = Integer.parseInt(args[0]);
-				int qos = Integer.parseInt(args[1]);
-				if(numSub < 1) {
-					System.out.println("Numero subscriber non valido");
-				} else {
-					if(qos < 0 || qos > 2) {
-						System.out.println("QOS non valido");
-					} else {
-						NUM_THREADS = numSub;
-						Subscriber.qos = qos;
-						
-						ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
-						for(int i = 1; i <= NUM_THREADS; i++) {
-							listSub.add(new Subscriber(listSub, i));
-							listSub.get(listSub.size()-1).run();
-							Thread.sleep(DELAY_THREADS);
-						}
-						System.out.println("Partial end");
-						synchronized(listSub) {
-							listSub.wait();
-						}
-						for(Subscriber sub : listSub) {
-							if(sub.mqttClient.isConnected()) {
-								sub.mqttClient.disconnect();
-							}
-							sub.mqttClient.close();
-						}
-						
-						System.out.println("Fine");		
-					}
-				}
-			} catch(NumberFormatException e) {
-				System.out.println("Inserire un numero di subscriber valido");
-			}
+	
+	public void terminate() throws MqttException {
+		if(mqttClient.isConnected()) {
+			mqttClient.disconnect();				
 		}
+		mqttClient.close();
+		System.out.println(mqttClient.getClientId() + " disconnected");
 	}
 
 }

@@ -1,64 +1,80 @@
 package dos.tester;
 
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 import dos.Publisher;
-import dos.SubscribeCallback;
 import dos.Subscriber;
 
 public class Tester {
+	public static int numPub = 0;
+	public static int numSub = 0;
+	public static int timeRunning = 30 * 1000;
+	
 	public static void main(String args[]) throws InterruptedException, MqttException {
-		benchCase(100,1);
-		// benchCase(1,1);
-		// benchCase(1,500);
+		// Da metere tutto in una funzione (bisogna passare anche il qos)
+		// Valutare se calcolare i messaggi inviati anche usando i 
+		// subscriber (guardare i messaggi che stanno tra il tempo di
+		// inizio della conta e un tempo prestabilito).
+		ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
+		ArrayList<Publisher> listPub = new ArrayList<Publisher>();
+		
+		if(checkParams(args)) {
+			Object cre = new Object();
+			ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numPub + numSub);
+			for(int i = 1; i <= numPub; i++) {
+				listPub.add(new Publisher(listPub, cre, i));
+				executor.execute(listPub.get(listPub.size()-1));
+			}
+			for(int i = 1; i <= numSub; i++) {
+				listSub.add(new Subscriber(listSub, i));
+				executor.execute(listSub.get(listSub.size()-1));
+			}
+			System.out.println("Waiting for clients to start...");
+			Thread.sleep(2000);
+			
+			// Counting
+			Publisher.start = true;
+			Thread.sleep(timeRunning);
+			Publisher.start = false;
+			
+			// Terminating pubs and subs
+			Publisher.terminated = true;
+			System.out.println("Waiting for threads to terminate...");
+			for(Subscriber sub : listSub) {
+				sub.terminate();
+			}
+			
+			// Asking for termination of main clients threads and waiting
+			// for it
+			executor.shutdown();
+			executor.awaitTermination(1, TimeUnit.HOURS);
+			int numMsg = 0;
+			for(Publisher pub : listPub) {
+				numMsg += pub.count;
+			}
+			System.out.println("Messages per second managed: " + numMsg / (timeRunning / 1000));
+		}
 	}
 	
-	public static void benchCase(int numPub, int numSub) throws InterruptedException, MqttException {	
-			ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
-			ArrayList<Publisher> listPub = new ArrayList<Publisher>();
-			/*
-			Publisher.NUM_THREADS = numPub;
-			Subscriber.NUM_THREADS = numSub;
-			SubscribeCallback.sumDelay = -1;
-			SubscribeCallback.count = 1;
-			SubscribeCallback.avg = 0;
-			*/
-			
-			for(int i = 1; i <= Subscriber.NUM_THREADS; i++) {
-				listSub.add(new Subscriber(listSub, i));
-				listSub.get(listSub.size()-1).run();
-				Thread.sleep(Subscriber.DELAY_THREADS);
+	private static boolean checkParams(String args[]) {
+		if(args.length != 2) {
+			System.out.println("Prendo <numero_pub> <numero_sub>");
+			return false;
+		} else {
+			try {
+				numPub = Integer.parseInt(args[0]);
+				numSub = Integer.parseInt(args[1]);
+			} catch(NumberFormatException e) {
+				System.out.println("Dati inseriti invalidi");
+				return false;
 			}
-			
-			Object cre = new Object();
-			synchronized(cre) {
-				for(int i = 1; i <= Publisher.NUM_THREADS; i++) {
-					System.out.println("Creating: " + i);
-					listPub.add(new Publisher(listPub, cre, i));
-					listPub.get(listPub.size()-1).start();
-				}	
-			}
-
-			synchronized(listSub) {
-				listSub.wait();
-				for(Subscriber sub : listSub) {
-					if(sub.mqttClient.isConnected()) {
-						sub.mqttClient.disconnect();
-					}
-					sub.mqttClient.close();
-				}
-			}
-			System.out.println("NUM PUB: " + Publisher.NUM_THREADS + "\n" +
-							   "NUM SUB: " + Subscriber.NUM_THREADS + "\n" +
-							   "MAX TROUGHPUT: " + 
-							   			((1000 / Publisher.DELAY_PUBLISH) * Publisher.NUM_THREADS) +
-							   			" msg/s" + "\n" +
-							   "AVG DELAY: " + SubscribeCallback.avg);				
-
-			
-			System.out.println("Fine");
+			return true;
+		}
 	}
 	
 }
