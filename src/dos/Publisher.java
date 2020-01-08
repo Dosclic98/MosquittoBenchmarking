@@ -6,17 +6,14 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 
+import dos.tester.Tester;
+
 public class Publisher implements Runnable {
 
 	// public static int DELAY_PUBLISH = 100;	
 	// public static int NUM_PUBLISH = 100;
 	
 	public static int qos = 0;
-	
-	public static volatile boolean start = false;
-	public static volatile boolean terminated = false;
-	
-	public int count = 0;
 
 	// private static String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
 	private static String BROKER_URL = "tcp://localhost:1883";
@@ -75,12 +72,11 @@ public class Publisher implements Runnable {
 			}
 			
 			boolean conn = mqttClient.isConnected();
-			while(conn && !terminated) {
+			while(conn && !Tester.terminated) {
 				synchronized(lock) {
 					conn = mqttClient.isConnected();
-					if(conn) {
-						publishTime(myId);
-						if(start) count++;				
+					if(conn && Tester.start) {
+						publishTime(myId);		
 					}
 				}
 			}
@@ -106,6 +102,5 @@ public class Publisher implements Runnable {
 		MqttMessage msg = new MqttMessage(message.getBytes());
 		msg.setQos(qos);
 		timeTopic.publish(msg);
-		// System.out.println("Published by " + mqttClient.getClientId() + " numero " + num + " on topic: " + timeTopic.getName() + "\n\t Message: " + message);						
 	}
 }

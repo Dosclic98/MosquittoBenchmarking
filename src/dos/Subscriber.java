@@ -4,8 +4,9 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Subscriber implements Runnable{
-	// public static int DELAY_THREADS = 10;
-
+	
+	public int count = 0;
+	
 	// Url del brocker
 	// public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
 	private static String BROKER_URL = "tcp://localhost:1883";
@@ -21,8 +22,6 @@ public class Subscriber implements Runnable{
 	// client mqtt
 	public MqttClient mqttClient;
 
-	public int counter = 0;
-
 	private Object lock;
 
 
@@ -35,7 +34,6 @@ public class Subscriber implements Runnable{
 
 		try {
 			synchronized(this.lock) {
-				counter = i;
 				clientId = MqttClient.generateClientId() + "-Sub";
 				mqttClient = new MqttClient(BROKER_URL, clientId);
 			}
@@ -48,7 +46,7 @@ public class Subscriber implements Runnable{
 
 	public void run() {
 		try {
-			mqttClient.setCallback(new SubscribeCallback());
+			mqttClient.setCallback(new SubscribeCallback(this));
 			mqttClient.connect();
 			mqttClient.subscribe(TOPIC, Subscriber.qos);
 
@@ -60,6 +58,7 @@ public class Subscriber implements Runnable{
 	}
 	
 	public void terminate() throws MqttException {
+		
 		if(mqttClient.isConnected()) {
 			mqttClient.disconnect();				
 		}

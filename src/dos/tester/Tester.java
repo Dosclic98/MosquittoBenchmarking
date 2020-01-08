@@ -14,6 +14,10 @@ public class Tester {
 	public static int numPub = 0;
 	public static int numSub = 0;
 	public static int timeRunning = 30 * 1000;
+	public static volatile boolean start = false;
+	public static volatile long startTime = 0;
+	public static volatile long delta = 0;
+	public static volatile boolean terminated = false;
 	
 	public static void main(String args[]) throws InterruptedException, MqttException {
 		// Da metere tutto in una funzione (bisogna passare anche il qos)
@@ -35,15 +39,17 @@ public class Tester {
 				executor.execute(listSub.get(listSub.size()-1));
 			}
 			System.out.println("Waiting for clients to start...");
-			Thread.sleep(2000);
+			Thread.sleep(1000);
 			
 			// Counting
-			Publisher.start = true;
+			Tester.delta = timeRunning;
+			Tester.startTime = System.currentTimeMillis();
+			Tester.start = true;
 			Thread.sleep(timeRunning);
-			Publisher.start = false;
+			Tester.start = false;
 			
 			// Terminating pubs and subs
-			Publisher.terminated = true;
+			Tester.terminated = true;
 			System.out.println("Waiting for threads to terminate...");
 			for(Subscriber sub : listSub) {
 				sub.terminate();
@@ -54,8 +60,8 @@ public class Tester {
 			executor.shutdown();
 			executor.awaitTermination(1, TimeUnit.HOURS);
 			int numMsg = 0;
-			for(Publisher pub : listPub) {
-				numMsg += pub.count;
+			for(Subscriber sub : listSub) {
+				numMsg += sub.count;
 			}
 			System.out.println("Messages per second managed: " + numMsg / (timeRunning / 1000));
 		}
