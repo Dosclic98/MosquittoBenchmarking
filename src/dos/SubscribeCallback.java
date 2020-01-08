@@ -41,8 +41,13 @@ public class SubscribeCallback implements MqttCallback {
 			if(mqttMessage.toString().equals("EXIT")) {
 				synchronized(lock) {
 					if(sumDelay != (long) -2) {
-						System.out.println("AVG Delay: " + sumDelay / count);
 						avg = sumDelay / count;
+						System.out.println("NUM PUB: " + Publisher.NUM_THREADS + "\n" +
+								   "NUM SUB: " + Subscriber.NUM_THREADS + "\n" +
+								   "MAX TROUGHPUT: " + 
+								   			((1000 / Publisher.DELAY_PUBLISH) * Publisher.NUM_THREADS) +
+								   			" msg/s" + "\n" +
+								   "AVG DELAY: " + SubscribeCallback.avg);
 						sumDelay = (long) -2;
 						count = 1;
 						lock.notifyAll();

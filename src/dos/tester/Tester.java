@@ -18,13 +18,13 @@ public class Tester {
 	public static void benchCase(int numPub, int numSub) throws InterruptedException, MqttException {	
 			ArrayList<Subscriber> listSub = new ArrayList<Subscriber>();
 			ArrayList<Publisher> listPub = new ArrayList<Publisher>();
-			
+			/*
 			Publisher.NUM_THREADS = numPub;
 			Subscriber.NUM_THREADS = numSub;
 			SubscribeCallback.sumDelay = -1;
 			SubscribeCallback.count = 1;
 			SubscribeCallback.avg = 0;
-			
+			*/
 			
 			for(int i = 1; i <= Subscriber.NUM_THREADS; i++) {
 				listSub.add(new Subscriber(listSub, i));
@@ -40,8 +40,6 @@ public class Tester {
 					listPub.get(listPub.size()-1).start();
 				}	
 			}
-			
-			System.out.println("Fine");
 
 			synchronized(listSub) {
 				listSub.wait();

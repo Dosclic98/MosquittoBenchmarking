@@ -10,11 +10,11 @@ import org.eclipse.paho.client.mqttv3.MqttTopic;
 
 public class Publisher extends Thread {
 
-	public static int NUM_THREADS = 500;
+	public static int NUM_THREADS = 1;
 	public static int DELAY_PUBLISH = 100;	
 	public static int NUM_PUBLISH = 100;
 	
-	public static int qos = 1;
+	public static int qos = 1; 
 
 	// private static String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
 	private static String BROKER_URL = "tcp://localhost:1883";
@@ -122,17 +122,50 @@ public class Publisher extends Thread {
 	}
 
 	public static void main(String args[]) throws InterruptedException {
-		ArrayList<Publisher> listPub = new ArrayList<Publisher>();
-		
-		Object cre = new Object();
-		synchronized(cre) {
-			for(int i = 1; i <= NUM_THREADS; i++) {
-				System.out.println("Creating: " + i);
-				listPub.add(new Publisher(listPub, cre, i));
-				listPub.get(listPub.size()-1).start();
-			}	
+		String fileName = new java.io.File(Publisher.class.getProtectionDomain()
+				  .getCodeSource()
+				  .getLocation()
+				  .getPath())
+				.getName();
+
+		if(args.length != 3) {
+			System.out.println("Prendo --> java -jar " + fileName + " <num_pub> <delay_publish> <qos>");
+		} else {
+			try {
+				int numPub = Integer.parseInt(args[0]);
+				int delPub = Integer.parseInt(args[1]);
+				int qos = Integer.parseInt(args[2]);
+				if(numPub < 1) {
+					System.out.println("Numero publisher non valido");
+				} else {
+					if(delPub <= 0) {
+						System.out.println("Delay publisher non valido");
+					} else {
+						if(qos < 0 || qos > 2) {
+							System.out.println("QOS non valido");
+						} else {
+							NUM_THREADS = numPub;
+							DELAY_PUBLISH = delPub;
+							Publisher.qos = qos;
+							
+							ArrayList<Publisher> listPub = new ArrayList<Publisher>();
+							
+							Object cre = new Object();
+							synchronized(cre) {
+								for(int i = 1; i <= NUM_THREADS; i++) {
+									System.out.println("Creating: " + i);
+									listPub.add(new Publisher(listPub, cre, i));
+									listPub.get(listPub.size()-1).start();
+								}	
+							}
+							
+							System.out.println("Creati");
+						}
+					}
+				}	
+			} catch(NumberFormatException e) {
+				System.out.println("Inserire un numero di publisher, delay e qos validi");
+			}
 		}
-		
-		System.out.println("Fine");
 	}
 }
