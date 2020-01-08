@@ -29,8 +29,8 @@ public class Publisher implements Runnable {
 	private Object lock;
 
 
-	public Publisher(Object lock1, Object lock2, int i) {
-		if(lock == null || lock2 == null) {
+	public Publisher(Object lock1, int i) {
+		if(lock == null) {
 			this.lock = new Object();
 		} else {
 			this.lock = lock1;
@@ -98,7 +98,8 @@ public class Publisher implements Runnable {
 
 	private void publishTime(int num) throws MqttException {
 		final MqttTopic timeTopic = mqttClient.getTopic(TOPIC);
-		final String message = Long.toString(System.currentTimeMillis());
+		int rndId = (int)((Math.random() * 1000000) + 1);
+		final String message = rndId + "+" + Long.toString(System.currentTimeMillis());
 		MqttMessage msg = new MqttMessage(message.getBytes());
 		msg.setQos(qos);
 		timeTopic.publish(msg);

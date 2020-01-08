@@ -1,11 +1,15 @@
 package dos;
 
+import java.util.HashSet;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Subscriber implements Runnable{
 	
 	public int count = 0;
+	
+	public static volatile HashSet<String> countedMsgs = new HashSet<String>();
 	
 	// Url del brocker
 	// public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";
@@ -23,14 +27,13 @@ public class Subscriber implements Runnable{
 	public MqttClient mqttClient;
 
 	private Object lock;
+	private Object lock2;
 
 
-	public Subscriber(Object lock, int i) {
-		if(lock == null) {
-			this.lock = new Object();
-		} else {
-			this.lock = lock;
-		}
+	public Subscriber(Object lock, Object lock2, int i) {
+		this.lock = lock;	
+		this.lock2 = lock2;
+		
 
 		try {
 			synchronized(this.lock) {
@@ -46,7 +49,7 @@ public class Subscriber implements Runnable{
 
 	public void run() {
 		try {
-			mqttClient.setCallback(new SubscribeCallback(this));
+			mqttClient.setCallback(new SubscribeCallback(this, lock2));
 			mqttClient.connect();
 			mqttClient.subscribe(TOPIC, Subscriber.qos);
 

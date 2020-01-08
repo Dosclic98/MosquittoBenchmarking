@@ -31,11 +31,11 @@ public class Tester {
 			Object cre = new Object();
 			ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numPub + numSub);
 			for(int i = 1; i <= numPub; i++) {
-				listPub.add(new Publisher(listPub, cre, i));
+				listPub.add(new Publisher(listPub, i));
 				executor.execute(listPub.get(listPub.size()-1));
 			}
 			for(int i = 1; i <= numSub; i++) {
-				listSub.add(new Subscriber(listSub, i));
+				listSub.add(new Subscriber(listSub, cre, i));
 				executor.execute(listSub.get(listSub.size()-1));
 			}
 			System.out.println("Waiting for clients to start...");
