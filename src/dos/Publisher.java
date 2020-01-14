@@ -22,8 +22,6 @@ public class Publisher implements Runnable {
 
 	private String clientId;
 
-	private static String TOPIC = "dos/Bench";
-
 	private MqttClient mqttClient;
 
 	private Object lock;
@@ -61,14 +59,14 @@ public class Publisher implements Runnable {
 				// Imposta il fatto che i messaggi pubblicati da questo publisher non vadano recuperati da un subscriber
 				// che si connette dopo l'inizio della trasmissione
 				option.setCleanSession(true);
-
+				option.setMaxInflight(1000);
 				// Imposta il suo comportamento in casi particolari
 				option.setWill(mqttClient.getTopic("retilab/LWT"), "I'm gone".getBytes(), 0 , false);
 
 				//Thread.sleep(100);
 				mqttClient.connect(option);
 				
-				System.out.println("Publisher " + mqttClient.getClientId() + " connected on topic: " + Publisher.TOPIC);
+				System.out.println("Publisher " + mqttClient.getClientId() + " connected on topic: " + Tester.topics[myId-1]);
 			}
 			
 			boolean conn = mqttClient.isConnected();
@@ -97,7 +95,7 @@ public class Publisher implements Runnable {
 	}
 
 	private void publishTime(int num) throws MqttException {
-		final MqttTopic timeTopic = mqttClient.getTopic(TOPIC);
+		final MqttTopic timeTopic = mqttClient.getTopic(Tester.topics[num-1]);
 		final String message = Long.toString(System.currentTimeMillis());
 		MqttMessage msg = new MqttMessage(message.getBytes());
 		msg.setQos(qos);
