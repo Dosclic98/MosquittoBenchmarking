@@ -1,15 +1,11 @@
 package dos;
 
-import java.util.HashSet;
-
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class Subscriber implements Runnable{
 	
 	public int count = 0;
-	
-	public static volatile HashSet<String> countedMsgs = new HashSet<String>();
 	
 	// Url del brocker
 	// public static final String BROKER_URL = "tcp://mqtt.eclipse.org:1883";

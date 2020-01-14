@@ -98,8 +98,7 @@ public class Publisher implements Runnable {
 
 	private void publishTime(int num) throws MqttException {
 		final MqttTopic timeTopic = mqttClient.getTopic(TOPIC);
-		int rndId = (int)((Math.random() * 1000000) + 1);
-		final String message = rndId + "+" + Long.toString(System.currentTimeMillis());
+		final String message = Long.toString(System.currentTimeMillis());
 		MqttMessage msg = new MqttMessage(message.getBytes());
 		msg.setQos(qos);
 		timeTopic.publish(msg);

@@ -30,25 +30,13 @@ public class SubscribeCallback implements MqttCallback {
 	@Override
 	public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
 		String timeMsg = mqttMessage.toString();
-		boolean go = false;
-		synchronized(lock) {
-			go = !Subscriber.countedMsgs.contains(timeMsg);
-			if(go) Subscriber.countedMsgs.add(timeMsg);
-		}
-		long time = parseTime(timeMsg);
-		if(go) {
-			if(Tester.start) {
-				if(time >= Tester.startTime && 
-				   (time <= (Tester.startTime + Tester.delta)) ) {
-					subCaller.count++;
-				}
+		long time = Long.parseLong(timeMsg);
+		if(Tester.start) {
+			if(time >= Tester.startTime && 
+			   (time <= (Tester.startTime + Tester.delta)) ) {
+				subCaller.count++;
 			}
 		}
-	}
-	
-	private long parseTime(String msg) {
-		String[] arr = msg.split("+");
-		assert(arr.length == 2);
-		return Long.parseLong(arr[1]);
+		
 	}
 }
